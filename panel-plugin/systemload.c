@@ -83,6 +83,11 @@ typedef struct
 
 typedef struct
 {
+    gboolean days;
+} t_uptime_options;
+
+typedef struct
+{
     GtkWidget  *box;
     GtkWidget  *label_up;
     GtkWidget  *label_down;
@@ -91,6 +96,9 @@ typedef struct
 
     gulong     value_read;
     gboolean   enabled;
+
+    t_uptime_options    options;
+
 } t_uptime_monitor;
 
 typedef struct
@@ -180,12 +188,20 @@ update_monitors(t_global_monitor *global)
         days = global->uptime->value_read / 86400;
         hours = (global->uptime->value_read / 3600) % 24;
         mins = (global->uptime->value_read / 60) % 60;
-        g_snprintf(caption, sizeof(caption), ngettext("%d day", "%d days", days), days);
-        gtk_label_set_text(GTK_LABEL(global->uptime->label_up),
-                           caption);
-        g_snprintf(caption, sizeof(caption), "%d:%02d", hours, mins);
-        gtk_label_set_text(GTK_LABEL(global->uptime->label_down),
-                           caption);
+        // Check whether user would like to display days
+        if(!global->uptime->options.days)
+        {
+            g_snprintf(caption, sizeof(caption), "%d:%02d", hours, mins);
+            gtk_label_set_text(GTK_LABEL(global->uptime->label_up),
+                            caption);
+        }
+        else
+        {
+            g_snprintf(caption, sizeof(caption),
+                            ngettext("%d day %d:%02d", "%d days %d:%02d", days), days, hours, mins);
+            gtk_label_set_text(GTK_LABEL(global->uptime->label_up),
+                            caption);
+        }
 
         g_snprintf(caption, sizeof(caption),
                    ngettext("Uptime: %d day %d:%02d", "Uptime: %d days %d:%02d", days),
@@ -376,6 +392,7 @@ monitor_control_new(XfcePanelPlugin *plugin)
     
     global->uptime = g_new(t_uptime_monitor, 1);
     global->uptime->enabled = TRUE;
+    global->uptime->options.days = TRUE;
     global->uptime->tooltip_text = gtk_label_new(NULL);
     g_object_ref(global->uptime->tooltip_text);
     
@@ -596,6 +613,9 @@ monitor_write_config(XfcePanelPlugin *plugin, t_global_monitor *global)
 
     xfce_rc_write_bool_entry (rc, "Enabled",
             global->uptime->enabled);
+
+    xfce_rc_write_bool_entry (rc, "Enabled",
+            global->uptime->options.days);
 
     xfce_rc_close (rc);
 }
@@ -819,7 +839,8 @@ monitor_create_options(XfcePanelPlugin *plugin, t_global_monitor *global)
             N_ ("CPU monitor"),
             N_ ("Memory monitor"),
             N_ ("Swap monitor"),
-            N_ ("Uptime monitor")
+            N_ ("Uptime monitor"),
+            N_ ("Display days")
     };
 
     xfce_panel_plugin_block_menu (plugin);
@@ -870,6 +891,10 @@ monitor_create_options(XfcePanelPlugin *plugin, t_global_monitor *global)
     /*uptime monitor options - start*/
     table = new_frame(global, content,
                       FRAME_TEXT[3], 1, &global->uptime->enabled);
+    GtkWidget *label;
+    label = new_label_or_check_button(global,
+                    FRAME_TEXT[4], &global->uptime->options.days, gtk_check_button_new());
+    gtk_table_attach_defaults(table,label,0,1,0,1);
     /*uptime monitor options - end*/
 
     gtk_widget_show_all (dlg);

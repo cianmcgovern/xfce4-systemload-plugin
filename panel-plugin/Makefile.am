@@ -7,10 +7,10 @@ INCLUDES =								\
 plugindir =								\
 	$(libdir)/xfce4/panel/plugins
 	
-plugin_PROGRAMS =							\
-	xfce4-systemload-plugin
+plugin_LTLIBRARIES =							\
+	libsystemload.la
 
-xfce4_systemload_plugin_SOURCES =					\
+libsystemload_la_SOURCES =					\
 	systemload.c							\
 	uptime.c							\
 	uptime.h							\
@@ -19,7 +19,7 @@ xfce4_systemload_plugin_SOURCES =					\
 	cpu.c								\
 	cpu.h
 
-xfce4_systemload_plugin_CFLAGS =					\
+libsystemload_la_CFLAGS =					\
 	$(GTK_CFLAGS)							\
 	$(LIBXFCE4UTIL_CFLAGS)						\
 	$(LIBXFCE4UI_CFLAGS)						\
@@ -27,7 +27,14 @@ xfce4_systemload_plugin_CFLAGS =					\
 	$(UPOWER_GLIB_CFLAGS)						\
 	$(PLATFORM_CFLAGS)
 
-xfce4_systemload_plugin_LDADD =						\
+libsystemload_la_LDFLAGS = \
+	-avoid-version \
+	-module \
+	-no-undefined \
+	-export-symbols-regex '^xfce_panel_module_(preinit|init|construct)' \
+	$(PLATFORM_LDFLAGS)
+
+libsystemload_la_LIBADD =						\
 	$(LIBXFCE4UTIL_LIBS)						\
 	$(LIBXFCE4UI_LIBS)						\
 	$(LIBXFCE4PANEL_LIBS) 						\
@@ -37,27 +44,17 @@ xfce4_systemload_plugin_LDADD =						\
 # Desktop file
 #
 desktopdir =								\
-	$(datadir)/xfce4/panel-plugins
-
-desktop_in_in_files =							\
-	systemload.desktop.in.in
-
-desktop_in_files =							\
-	$(desktop_in_in_files:.desktop.in.in=.desktop.in)
-
-%.desktop.in: %.desktop.in.in
-	sed -e "s,\@libdir\@,$(libdir),g" < $< > $@
+	$(datadir)/xfce4/panel/plugins
 
 desktop_DATA =								\
-	$(desktop_in_files:.desktop.in=.desktop)
+	systemload.desktop
 
 @INTLTOOL_DESKTOP_RULE@
 
 EXTRA_DIST =								\
-	$(desktop_in_in_files)
+	systemload.desktop.in
 
 CLEANFILES =								\
-	$(desktop_in_files)						\
 	$(desktop_DATA)
 
 # vi:set ts=8 sw=8 noet ai nocindent syntax=automake:
